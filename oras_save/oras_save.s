@@ -30,7 +30,7 @@
 	.area 0xE058-0x5000 ; maximum size of the compressed hax payload
 
 			haxx_payload:
-				.incbin "../haxx_payload.bin"
+				.incbin "../build/haxx_payload.bin"
 			haxx_payload_end:
 		
 	.endarea
