@@ -1,4 +1,7 @@
-#include <blz.c>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include "blz.h"
 
 int main(int argc, char**argv) {
     if (argc < 2) {
@@ -23,4 +26,7 @@ int main(int argc, char**argv) {
 
     FILE *outf = fopen(outfn, "wb");
     fwrite(newbuf, 1, newlen, outf);
+	fclose(outf);
+	
+	return 0;
 }

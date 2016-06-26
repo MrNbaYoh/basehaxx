@@ -16,7 +16,7 @@ oras_code/oras_code.bin: $(wildcard oras_code/source/*)
 	@cd oras_code && make
 
 build/haxx_payload.bin: utils/lzss
-	@curl -sL -o otherapp.bin http://smea.mtheall.com/get_payload.php?version=NEW-10-6-0-31-JPN
+	@curl -sL -o otherapp.bin http://smea.mtheall.com/get_payload.php?version=$(HARDWARE)-$(FIRM_VERSION)-$(REGION)
 	@utils/lzss otherapp.bin
 	@rm otherapp.bin
 	@mv otherapp.bin.lzss build/haxx_payload.bin

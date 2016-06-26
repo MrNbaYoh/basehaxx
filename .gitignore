@@ -1,3 +1,4 @@
 haxx_payload.*
 **/build/*
 utils/lzss
+utils/lzss.exe
