@@ -1,6 +1,15 @@
 #include "utils.h"
 #include "imports.h"
 
+int memcmp(void *ptr1, void *ptr2, size_t num)
+{
+	for(; num--; ptr1++, ptr2++)
+		if(*(u8*)ptr1 != *(u8*)ptr2)
+			return *(u8*)ptr1-*(u8*)ptr2;
+			
+	return 0;
+}
+
 void* memset(void *ptr, int value, size_t num)
 {
     u8 *p = ptr;
@@ -65,7 +74,7 @@ Result _GSPGPU_SetBufferSwap(Handle handle, u32 screenId, GSPGPU_FramebufferInfo
 	return cmdbuf[1];
 }
 
-/*
+
 Result _GSPGPU_InvalidateDataCache(Handle handle, const void* adr, u32 size)
 {
 	u32 *cmdbuf = getThreadCommandBuffer();
@@ -81,7 +90,7 @@ Result _GSPGPU_InvalidateDataCache(Handle handle, const void* adr, u32 size)
 
 	return cmdbuf[1];
 }
-*/
+
 
 unsigned int _strlen(const char* str)
 {

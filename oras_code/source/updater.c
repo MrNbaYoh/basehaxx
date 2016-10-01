@@ -124,8 +124,8 @@ Result update(u8* firmver, u32* decompressed_size)
 	memcpy(LINEAR_BUFFER, buffer, size);
 	buffer = BLZ_Code(buffer, size, (unsigned int*)&size, BLZ_NORMAL);
 	
-	FS_Archive save_archive = (FS_Archive){ARCHIVE_SAVEDATA, (FS_Path){PATH_EMPTY, 1, (u8*)""}};
-	ret = _FSUSER_OpenArchive(fsHandle, &save_archive);
+	FS_Archive save_archive = 0;
+	ret = _FSUSER_OpenArchive(fsHandle, &save_archive, ARCHIVE_SAVEDATA, (FS_Path){PATH_EMPTY, 1, (u8*)""});
     if(ret) return ret;
 	
 	Handle file;
@@ -150,6 +150,6 @@ Result update(u8* firmver, u32* decompressed_size)
 	ret = _FSUSER_ControlArchive(fsHandle, save_archive, ARCHIVE_ACTION_COMMIT_SAVE_DATA, NULL, 0, NULL, 0);
     if(ret) return ret;
 
-    ret = _FSUSER_CloseArchive(fsHandle, &save_archive);
+    ret = _FSUSER_CloseArchive(fsHandle, save_archive);
     return ret;
 }

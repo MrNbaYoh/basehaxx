@@ -160,44 +160,31 @@ void displayMenu(u8* fb, u8** decompressed_buffer, u32* decompressed_size)
 	}
 }
 
-void update_code_linear_base()
-{
-	FS_Archive save_archive = (FS_Archive){ARCHIVE_SAVEDATA, (FS_Path){PATH_EMPTY, 1, (u8*)""}};
-	Result ret = _FSUSER_OpenArchive(fsHandle, &save_archive);
-    if(ret) return;
-	
-	Handle file;
-	ret = _FSUSER_OpenFile(fsHandle, &file, save_archive, _fsMakePath(PATH_ASCII, "/main"), FS_OPEN_READ | FS_OPEN_WRITE, 0);
-	if(ret) return;
-	
-	u32 bytes = 0;
-	ret = _FSFILE_Write(file, &bytes, PICDATA_SAVE_OFFSET + HAX_PAYLOAD_OFFSET - 0x8, (u32*)(ORAS_SAVE_PICDATA_BUFFER_PTR + HAX_PAYLOAD_OFFSET - 0x8), sizeof(u32), FS_WRITE_FLUSH | FS_WRITE_UPDATE_TIME);
-	if(ret) return;
-	
-	u8* picdata_temp_buf = &LINEAR_BUFFER[0x0017E900];
-	ret = _FSFILE_Read(file, &bytes, PICDATA_SAVE_OFFSET, (u32*)picdata_temp_buf, PICDATA_SIZE);
-	if(ret) return;
-	
-	u16 chk = ccitt16(picdata_temp_buf, PICDATA_SIZE);
-	ret = _FSFILE_Write(file, &bytes, PICDATA_CHK_OFFSET, (u32*)&chk, 2, FS_WRITE_FLUSH | FS_WRITE_UPDATE_TIME);
-	if(ret) return;
-	
-	ret = _FSFILE_Close(file);
-    if(ret) return;
-	
-	ret = _FSUSER_ControlArchive(fsHandle, save_archive, ARCHIVE_ACTION_COMMIT_SAVE_DATA, NULL, 0, NULL, 0);
-    if(ret) return;
-
-    ret = _FSUSER_CloseArchive(fsHandle, &save_archive);
-}
-
 u32* hidKeys;
 Handle httpcHandle;
 
 void _main()
 {
-	u32 code_linear_base = *(u32*)(ORAS_SAVE_PICDATA_BUFFER_PTR + HAX_PAYLOAD_OFFSET - 0x8);
-	update_code_linear_base();
+	u32 otherapp_pages[0x7];
+	memset(otherapp_pages, 0x0, 0x4*0x7);
+	
+	u32 linear_base = 0x14000000 + (*(u8*)ORAS_APPMEMTYPE_PTR == 0x6 ? 0x07c00000 : 0x04000000) - ORAS_MAX_CODEBIN_SIZE;
+	
+	for(unsigned int i = 0, l = 0x14000000, pages = 0; i < ORAS_MAX_CODEBIN_SIZE && pages < 0x7; i+=0x1000, l+=0x20)
+	{
+		gspwn((void*)l, (void*)(linear_base + i), 0x1000);
+		svcSleepThread(0x100000);
+		
+		for(u8 j = 0; j<0x7; j++)
+		{
+			if(!memcmp((void*)l, (void*)(0x101000 + j*0x1000), 0x20))
+			{
+				otherapp_pages[j] = i;
+				pages++;
+			}
+		}
+	}
+
 	
 	hidKeys = (u32*)((*(u32*)ORAS_HID_SHAREDMEM_PTR) + 0x1C);
 	httpcHandle = 0;
@@ -222,9 +209,12 @@ void _main()
 	_DSP_RegisterInterruptEvents(dspHandle, 0x0, 0x2, 0x2);
 	
 	_GSPGPU_FlushDataCache(gspHandle, 0xFFFF8001, (u32*)decompressed_buffer, decompressed_size);
-	gspwn((void*)(code_linear_base + 0x00101000 - 0x00100000), decompressed_buffer, (decompressed_size + 0x1F) & ~0x1F);
-	
-	svcSleepThread(300*1000*1000);
+	//gspwn((void*)(code_linear_base + 0x00101000 - 0x00100000), decompressed_buffer, (decompressed_size + 0x1F) & ~0x1F);
+	for(int i = 0; i < 0x7; i++)
+	{
+		gspwn((void*)(linear_base + otherapp_pages[i]), (void*)(decompressed_buffer+i*0x1000), 0x1000);
+		svcSleepThread(0x100000);
+	}
 	
 	// ghetto dcache invalidation
 	// don't judge me

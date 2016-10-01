@@ -11,7 +11,7 @@
 .orga 0x23FA4
 	.word ORAS_2ND_JMP_PTR ; the game dereference this => point to the address where the 0x67c00+0x10 block is stored
 	.word ORAS_1ST_JMP_PTR ; the game dereference this => point to the address where the 0x67c00 block is stored
-	.word 0x00000001 ; have to be != 1 to make the code jump
+	.word 0x00000001 ; have to be != 0 to make the code jump
 
 .orga 0x67C00
 	.area 0x4FF8 ; maximum allowed size of rop+code
@@ -21,9 +21,7 @@
 
 	.endarea
 
-.orga 0x67C00 + HAX_PAYLOAD_OFFSET - 0x8
-	.word 0x14000000 + 0x40000000 - 0x00500000 ; used to store the code_linear_base
-											   ; by default the O3DS one is used
+.orga 0x67C00 + HAX_PAYLOAD_OFFSET - 0x4
 	.word haxx_payload_end - haxx_payload ; store the size of hax payload 
 
 .orga 0x67C00 + HAX_PAYLOAD_OFFSET

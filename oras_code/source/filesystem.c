@@ -5,8 +5,8 @@ Result _FSUSER_OpenFile(Handle* handle, Handle* out, FS_Archive archive, FS_Path
     u32* cmdbuf=getThreadCommandBuffer();
     cmdbuf[0]=0x080201C2;
     cmdbuf[1]=0;
-    cmdbuf[2]=(u32) archive.handle;
-    cmdbuf[3]=(u32) (archive.handle >> 32);
+    cmdbuf[2]=(u32) archive;
+    cmdbuf[3]=(u32) (archive >> 32);
     cmdbuf[4]=fileLowPath.type;
     cmdbuf[5]=fileLowPath.size;
     cmdbuf[6]=openflags;
@@ -19,7 +19,7 @@ Result _FSUSER_OpenFile(Handle* handle, Handle* out, FS_Archive archive, FS_Path
     return cmdbuf[1];
 }
 
-Result _FSUSER_OpenArchive(Handle *handle, FS_Archive *archive)
+Result _FSUSER_OpenArchive(Handle *handle, FS_Archive* archive, FS_ArchiveID id, FS_Path path)
 {
     if(!archive)
         return -2;
@@ -27,17 +27,17 @@ Result _FSUSER_OpenArchive(Handle *handle, FS_Archive *archive)
     u32 *cmdbuf = getThreadCommandBuffer();
 
     cmdbuf[0] = 0x080C00C2;
-    cmdbuf[1] = archive->id;
-    cmdbuf[2] = archive->lowPath.type;
-    cmdbuf[3] = archive->lowPath.size;
-    cmdbuf[4] = (archive->lowPath.size << 14) | 0x2;
-    cmdbuf[5] = (u32)archive->lowPath.data;
+    cmdbuf[1] = id;
+    cmdbuf[2] = path.type;
+    cmdbuf[3] = path.size;
+    cmdbuf[4] = (path.size << 14) | 0x2;
+    cmdbuf[5] = (u32)path.data;
 
     Result ret = 0;
     if((ret = svcSendSyncRequest(*handle)))
         return ret;
 
-    archive->handle  = cmdbuf[2] | ((u64)cmdbuf[3] << 32);
+    *archive  = cmdbuf[2] | ((u64)cmdbuf[3] << 32);
 
     return cmdbuf[1];
 }
@@ -113,8 +113,8 @@ Result _FSUSER_DeleteFile(Handle *handle, FS_Archive archive, FS_Path fileLowPat
 
     cmdbuf[0]=0x08040142;
     cmdbuf[1]= 0;
-    cmdbuf[2]=(u32)archive.handle;
-    cmdbuf[3]=(u32)(archive.handle >> 32);
+    cmdbuf[2]=(u32)archive;
+    cmdbuf[3]=(u32)(archive >> 32);
     cmdbuf[4]=fileLowPath.type;
     cmdbuf[5]=fileLowPath.size;
     cmdbuf[6]=(fileLowPath.size << 14) | 0x2;
@@ -131,8 +131,8 @@ Result _FSUSER_ControlArchive(Handle *handle, FS_Archive archive, FS_ArchiveActi
     u32* cmdbuf=getThreadCommandBuffer();
 
     cmdbuf[0]=0x080d0144;
-    cmdbuf[1]=(u32) archive.handle;
-    cmdbuf[2]=(u32) (archive.handle >> 32);
+    cmdbuf[1]=(u32) archive;
+    cmdbuf[2]=(u32) (archive >> 32);
     cmdbuf[3]=action;
     cmdbuf[4]=inputSize;
     cmdbuf[5]=outputSize;
@@ -147,14 +147,14 @@ Result _FSUSER_ControlArchive(Handle *handle, FS_Archive archive, FS_ArchiveActi
     return cmdbuf[1];
 }
 
-Result _FSUSER_CloseArchive(Handle* handle, FS_Archive* archive)
+Result _FSUSER_CloseArchive(Handle* handle, FS_Archive archive)
 {
     if(!archive)return -2;
     u32* cmdbuf=getThreadCommandBuffer();
 
     cmdbuf[0]=0x080E0080;
-    cmdbuf[1]=(u32) archive->handle;
-    cmdbuf[2]=(u32) (archive->handle >> 32);
+    cmdbuf[1]=(u32) archive;
+    cmdbuf[2]=(u32) (archive >> 32);
 
     Result ret=0;
     if((ret=svcSendSyncRequest(*handle)))return ret;

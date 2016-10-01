@@ -6,6 +6,38 @@
 			.word _lr ; lr
 .endmacro
 
+.macro stack_pivot,addr
+	.word ROP_ORAS_POP_R0PC
+		.word addr
+	.word ROP_ORAS_POP_R1PC
+		.word ROP_ORAS_NOP
+	.word ORAS_SCANLOOP_PIVOT
+.endmacro
+
+.macro store_value,addr,value
+	.word ROP_ORAS_POP_R0PC
+		.word value
+	.word ROP_ORAS_POP_R1PC
+		.word addr
+	.word ROP_ORAS_STR_R0R1_POP_R4PC
+		.word 0xDEADC0DE ; r4 : garbage
+.endmacro
+
+.macro store_r0_to,addr
+	.word ROP_ORAS_POP_R1PC
+		.word addr
+	.word ROP_ORAS_STR_R0R1_POP_R4PC
+		.word 0xDEADC0DE ; r4 : garbage
+.endmacro
+
+.macro deref_to_r0_and_sub,addr,value
+	dereference_to_r0 addr 
+	.word ROP_ORAS_POP_R1PC
+		.word value
+	.word ROP_ORAS_SUB_R0_R0R1_POP_R4PC
+		.word 0xDEADC0DE ; r4 : garbage
+.endmacro
+
 .macro deref_to_r0_and_add,addr,value
 	dereference_to_r0 addr 
 	.word ROP_ORAS_POP_R1PC
@@ -30,6 +62,15 @@
 		.word 0xDEADC0DE
 		.word 0xDEADC0DE
 		.word 0xDEADC0DE
+.endmacro
+
+.macro store_to_addr_if_equal,addr,value
+	set_lr ROP_ORAS_NOP
+	.word ROP_ORAS_POP_R0PC
+		.word value
+	.word ROP_ORAS_POP_R1PC
+		.word addr - 0x4; addr popped
+	.word ROP_ORAS_STREQ_R0R1_4_BX_LR
 .endmacro
 
 .macro store_to_addr_if_nequal,value,addr
