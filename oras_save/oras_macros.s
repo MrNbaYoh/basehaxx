@@ -152,12 +152,13 @@
 .endmacro
 
 ARCH_SAVEDATA equ 0x4
+ARCH_SDMC equ 0x9
 PATH_EMPTY equ 0x1
 PATH_ASCII equ 0x3
 FS_OPEN_READ equ 0x1
 
-.macro FSUSER_OpenFileDirectly,fileHandle,transaction,archiveId,archivePathType,archivePath,archivePathSize,filePathType,filePath,filePathSize,openflags,attributes
-	set_lr filePathSize
+.macro FSUSER_OpenFileDirectly,fileHandle_out,transaction,archiveId,archivePathType,archivePath,archivePathSize,filePathType,filePath,filePathSize,openflags,attributes
+	set_lr attributes
 	.word ROP_ORAS_POP_R0PC
 		.word ORAS_FSUSER_HANDLE ; r0 : FS:USER handle
 	.word ROP_ORAS_POP_R1PC
@@ -180,10 +181,7 @@ FS_OPEN_READ equ 0x1
 		.word filePathSize ; r12
 	.word ORAS_FSUSER_OPENFILEDIRECTLY + 0x24
 		.word 0xDEADC0DE
-		.word fileHandle
-		.word 0xDEADC0DE
-		.word 0xDEADC0DE
-		.word 0xDEADC0DE
+		.word fileHandle_out
 		.word 0xDEADC0DE
 		.word 0xDEADC0DE
 		.word 0xDEADC0DE
@@ -197,48 +195,40 @@ FS_OPEN_READ equ 0x1
 		.word 0xDEADC0DE
 .endmacro
 
-.macro FSFILE_GetSize,fileHandle,out_size
-	set_lr ROP_ORAS_NOP
+.macro FSFILE_Read,fileHandle_ptr,offseth,offsetl,dest_and_size_ptr,bytes_read_out
 	.word ROP_ORAS_POP_R0PC
-		.word fileHandle ; r0
+		.word fileHandle_ptr
+	.word ROP_ORAS_POP_R1PC
+		.word bytes_read_out
+	.word ROP_ORAS_POP_R2R3R4R5R6PC
+		.word offseth
+		.word offsetl
+		.word dest_and_size_ptr ; r4 ptr to dest and size
+		.word 0xDEADC0DE ; r5 garbage
+		.word 0xDEADC0DE ; r6 garbage
+	.word ORAS_FSFILE_READ+0x8
+		.word 0xDEADC0DE ; r4 garbage
+		.word 0xDEADC0DE ; r5 garbage
+		.word 0xDEADC0DE ; r6 garbage
+.endmacro
+
+.macro FSFILE_GetSize,fileHandle_ptr,out_size
+	.word ROP_ORAS_POP_R0PC
+		.word fileHandle_ptr ; r0
 	.word ROP_ORAS_POP_R1PC
 		.word out_size ; r1
-	.word ORAS_FSFILE_GETSIZE
+	.word ORAS_FSFILE_GETSIZE+0x4
+		.word 0xDEADC0DE ; r4 garbage
+		.word 0xDEADC0DE ; r5 garbage
+		.word 0xDEADC0DE ; r6 garbage
 .endmacro
 
-.macro FSFILE_Read,fileHandle,bytes_read,offsetl,offseth,buffer,size_ptr
-	.word ROP_ORAS_POP_R0PC
-		.word size_ptr
-	.word ROP_ORAS_LDR_R0R0_POP_R4PC ; dereference the size
-		.word 0xDEADC0DE ; garbage
-	.word ROP_ORAS_POP_R1PC
-		.word @@file_size
-	.word ROP_ORAS_STR_R0R1_POP_R4PC ; store the size at file_size
-		.word 0xDEADC0DE ; garbage
-	.word ROP_ORAS_POP_R12PC
-@@file_size: 
-		.word 0xDEADC0DE ; is overwritten ; r12 : file size
-	.word ROP_ORAS_POP_R0PC
-		.word fileHandle ; r0
-	.word ROP_ORAS_POP_R1PC
-		.word buffer ; r1
-	.word ROP_ORAS_POP_R2R3R4R5R6PC
-		.word offsetl ; r2
-		.word offseth ; r3
-		.word 0xDEADC0DE
-		.word bytes_read ; r5
-		.word 0xDEADC0DE ; garbage
-	.word ORAS_FSFILE_READ + 0x10
-		.word 0xDEADC0DE
-		.word 0xDEADC0DE
-		.word 0xDEADC0DE
-.endmacro
 	
-.macro FSFILE_Close,fileHandle
-	set_lr ROP_ORAS_NOP
+.macro FSFILE_Close,fileHandle_ptr
 	.word ROP_ORAS_POP_R0PC
-		.word fileHandle
-	.word ORAS_FSFILE_CLOSE
+		.word fileHandle_ptr
+	.word ORAS_FSFILE_CLOSE+0x4
+		.word 0xDEADC0DE ; r4 garbage
 .endmacro
 
 	

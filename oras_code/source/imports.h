@@ -5,16 +5,15 @@
 #include "../../build/constants.h"
 
 #define LINEAR_BUFFER ((u8*)0x14100000)
-#define PICDATA_SAVE_OFFSET 0x67C00
-#define PICDATA_SIZE 0xE058
-#define PICDATA_CHK_OFFSET 0x75FE2
-#define HAX_PAYLOAD_OFFSET 0x5000
-#define HAX_PAYLOAD_ADDR (ORAS_SAVE_PICDATA_BUFFER_PTR + HAX_PAYLOAD_OFFSET)
 #define ORAS_MAX_CODEBIN_SIZE 0x5AF000
 #define ORAS_APPMEMTYPE_PTR 0x1FF80030
+#define ORAS_SAVE_BASE_OWNERNAME_OFFSET 0x23F3E
+#define ORAS_BASE_MSG_LENTGH 0xE6
+#define ORAS_BASE_FAV_OFFSET 0x23A00
+#define ORAS_BASE_FAV_LENTGH 0x7AD0
+#define ORAS_BASE_FAV_CHK_OFFSET 0x75FCA
 
 extern u32* hidKeys;
-extern Handle httpcHandle;
 
 static Handle* const fsHandle = (Handle*)ORAS_FSUSER_HANDLE;
 static Handle* const dspHandle = (Handle*)ORAS_DSP_HANDLE;
@@ -26,19 +25,6 @@ static Result (* const _GSPGPU_FlushDataCache)(Handle* handle, Handle kProcess, 
 static Result (* const _GSPGPU_GxTryEnqueue)(u32** sharedGspCmdBuf, u32* cmdAddr) = (void*)ORAS_GSPGPU_GXTRYENQUEUE;
 static Result (* const _DSP_UnloadComponent)(Handle* handle) = (void*)ORAS_DSP_UNLOADCOMPONENT;
 static Result (* const _DSP_RegisterInterruptEvents)(Handle* handle, Handle event, u32 type, u32 port) = (void*)ORAS_DSP_REGISTERINTERRUPTEVENTS; 
-
-static Result (* const _SRV_GetServiceHandle)(Handle *out, const char* srvName, u8 nameLength) = (void*)ORAS_SRV_GETSERVICEHANDLE;
-
-static const char regions[7][4] = 
-{
-	"JPN",
-	"USA",
-	"EUR",
-	"EUR",
-	"CHN",
-	"KOR",
-	"TWN"
-};
 
 extern u32 screenColor;
 #endif

@@ -38,6 +38,8 @@ for a in sys.argv[2:]:
 		if len(s) > 0:
 			l.update(ast.literal_eval(s))
 
+l["ORAS_VERSION"] = "\""+l["ORAS_VERSION"]+"\""		
+	
 open(sys.argv[1]+".h","w").write(outputConstantsH(l))
 open(sys.argv[1]+".s","w").write(outputConstantsS(l))
 open(sys.argv[1]+".py","w").write(outputConstantsPY(l))

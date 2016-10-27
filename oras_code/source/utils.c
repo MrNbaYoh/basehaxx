@@ -33,14 +33,24 @@ void* memcpy(void *destination, const void *source, size_t num)
 	return destination;
 }
 
-size_t total_size = 0;
+#define CRC_POLY 0x1021
 
-void* calloc(size_t num, size_t size)
+unsigned short ccitt16(unsigned char *data, unsigned int length)
 {
-	u8* ptr = &LINEAR_BUFFER[0x00200000 + total_size];
-	total_size += num*size;
-	memset(ptr, 0, num*size);
-	return ptr;
+    unsigned short crc = 0xFFFF;
+
+    for (unsigned int i = 0; i < length; i++)
+    {
+        crc ^= (unsigned short)data[i] << 8;
+
+        for (int j = 0; j < 8; j++)
+            if (crc & 0x8000)
+                crc = crc << 1 ^ CRC_POLY;
+            else
+                crc = crc << 1;
+    }
+
+    return crc;
 }
 
 Result gspwn(void* dst, void* src, u32 size)
@@ -97,11 +107,6 @@ unsigned int _strlen(const char* str)
 	unsigned int length = 0;
 	while(*(str++)) length++;
 	return length;
-}
-
-Result _srvGetServiceHandle(Handle *out, const char* srvName)
-{
-	return _SRV_GetServiceHandle(out, srvName, _strlen(srvName));
 }
 
 FS_Path _fsMakePath(FS_PathType type, const void* path)
