@@ -141,30 +141,9 @@ Result displayMenu(u8* fb, u32* size_out)
 }
 
 u32* hidKeys;
-Handle httpcHandle;
 
 void _main()
-{
-	u32 otherapp_pages[0x7];
-	memset(otherapp_pages, 0x0, 0x4*0x7);
-	
-	u32 linear_base = 0x14000000 + (*(u8*)ORAS_APPMEMTYPE_PTR == 0x6 ? 0x07c00000 : 0x04000000) - ORAS_MAX_CODEBIN_SIZE;
-	
-	for(unsigned int i = 0, l = 0x14000000, pages = 0; i < ORAS_MAX_CODEBIN_SIZE && pages < 0x7; i+=0x1000, l+=0x20)
-	{
-		gspwn((void*)l, (void*)(linear_base + i), 0x1000);
-		svcSleepThread(0x100000);
-		
-		for(u8 j = 0; j<0x7; j++)
-		{
-			if(!memcmp((void*)l, (void*)(0x101000 + j*0x1000), 0x20))
-			{
-				otherapp_pages[j] = i;
-				pages++;
-			}
-		}
-	}
-	
+{	
 	_DSP_UnloadComponent(dspHandle);
 	_DSP_RegisterInterruptEvents(dspHandle, 0x0, 0x2, 0x2);
 	
@@ -191,9 +170,30 @@ void _main()
 		loadOtherAppPayload(&otherapp_size);
 		
 	otherapp_size = (otherapp_size + 0xFFF) & ~0xFFF;
+	
+	u32 otherapp_pages_count = otherapp_size >> 12;
+	u32 otherapp_pages[otherapp_pages_count];
+	memset(otherapp_pages, 0x0, sizeof(u32)*otherapp_pages_count);
+	
+	u32 linear_base = 0x14000000 + (*(u8*)ORAS_APPMEMTYPE_PTR == 0x6 ? 0x07c00000 : 0x04000000) - ORAS_MAX_CODEBIN_SIZE;
+	
+	for(unsigned int i = 0, l = 0x14000000, pages = 0; i < ORAS_MAX_CODEBIN_SIZE && pages < otherapp_pages_count; i+=0x1000, l+=0x20)
+	{
+		gspwn((void*)l, (void*)(linear_base + i), 0x1000);
+		svcSleepThread(0x100000);
+		
+		for(u8 j = 0; j < otherapp_pages_count; j++)
+		{
+			if(!memcmp((void*)l, (void*)(0x101000 + j*0x1000), 0x20))
+			{
+				otherapp_pages[j] = i;
+				pages++;
+			}
+		}
+	}
 		
 	_GSPGPU_FlushDataCache(gspHandle, 0xFFFF8001, (u32*)LINEAR_BUFFER, otherapp_size);
-	for(int i = 0; i < 0x7; i++)
+	for(int i = 0; i < otherapp_pages_count; i++)
 	{
 		gspwn((void*)(linear_base + otherapp_pages[i]), (void*)(LINEAR_BUFFER+i*0x1000), 0x1000);
 		svcSleepThread(0x100000);

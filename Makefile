@@ -2,7 +2,7 @@ ROPDB_TARGET = oras_ropdb/ropdb_$(ORAS_VERSION).txt
 
 .PHONY: all directories build/constants clean
 
-all: directories build/constants build/oras_code.bin oras_save/main copy
+all: directories build/constants build/oras_code.bin oras_save/main
 
 directories:
 	@mkdir -p build
